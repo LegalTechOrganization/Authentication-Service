@@ -52,7 +52,7 @@ services:
       JWT_ISSUER: http://keycloak:8080/realms/master
       DEBUG: "true"
     ports:
-      - "8000:8000"
+      - "8009:8009"
     depends_on:
       postgres:
         condition: service_healthy

@@ -24,7 +24,7 @@ RUN useradd --create-home --shell /bin/bash app \
 USER app
 
 # Открытие порта
-EXPOSE 8000
+EXPOSE 8009
 
 # Команда запуска
 CMD ["python", "run.py"] 

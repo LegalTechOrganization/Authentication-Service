@@ -58,7 +58,7 @@ alembic upgrade head
 python run.py
 ```
 
-Сервис будет доступен по адресу: http://localhost:8000
+Сервис будет доступен по адресу: http://localhost:8009
 
 ## API Endpoints
 
@@ -252,7 +252,7 @@ app/
 pytest
 
 # Проверка API документации
-# Откройте http://localhost:8000/docs
+# Откройте http://localhost:8009/docs
 ```
 
 ## Деплой
@@ -267,7 +267,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-EXPOSE 8000
+EXPOSE 8009
 
 CMD ["python", "run.py"]
 ```
