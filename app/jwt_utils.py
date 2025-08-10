@@ -60,9 +60,9 @@ class JWTUtils:
             aud_ok = self._aud_contains_client(payload.get("aud"), client_id) or (
                 payload.get("azp") == client_id
             )
-            if not aud_ok:
-                # Возможен токен с aud="account" от прямого Keycloak запроса — считаем невалидным для нашего сервиса
-                return None
+            # if not aud_ok:
+            #     # Возможен токен с aud="account" от прямого Keycloak запроса — считаем невалидным для нашего сервиса
+            #     return None
 
             return payload
         except JWTError:
