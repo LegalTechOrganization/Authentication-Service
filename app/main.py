@@ -25,8 +25,7 @@ app.include_router(organizations.router, prefix="/v1/org", tags=["Organizations"
 app.include_router(invites.router, prefix="/v1/invite", tags=["Invites"])
 
 # Отдельный роутер для валидации токенов (для Gateway)
-from app.routers import auth as auth_validation
-app.include_router(auth_validation.router, prefix="/v1/auth", tags=["Auth Validation"])
+app.include_router(auth.router, prefix="/v1/auth", tags=["Auth Validation"])
 
 
 @app.get("/")
