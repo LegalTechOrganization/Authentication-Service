@@ -8,6 +8,7 @@
 - **Keycloak** - внешний Identity Provider для аутентификации
 - **Локальная БД** - хранение организаций, участников и контекста
 - **JWT токены** - для авторизации и валидации
+- **HTTP-Only Cookies** - для безопасного хранения токенов
 - **REST API** - для взаимодействия с клиентами
 
 ## Установка и запуск
@@ -60,11 +61,64 @@ python run.py
 
 Сервис будет доступен по адресу: http://localhost:8000
 
+## HTTP-Only Cookies
+
+Сервис поддерживает **двойной режим аутентификации**:
+
+### 🔐 **Bearer Token (заголовки)**
+```http
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 🍪 **HTTP-Only Cookies (автоматически)**
+```http
+Cookie: access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...; refresh_token=abc123...
+```
+
+### 📋 **Настройки Cookies**
+
+| Параметр | Access Token | Refresh Token |
+|----------|--------------|---------------|
+| **HttpOnly** | ✅ Да | ✅ Да |
+| **Secure** | ❌ Нет (dev) | ❌ Нет (dev) |
+| **SameSite** | Lax | Lax |
+| **Path** | `/` | `/api/auth/refresh` |
+| **Max-Age** | 300 сек | 7 дней |
+
+### 🚀 **Автоматическая работа**
+
+1. **При регистрации/входе** - токены автоматически устанавливаются в cookies
+2. **При запросах** - сервис проверяет токен в заголовке ИЛИ в cookies
+3. **При refresh** - можно использовать refresh token из cookies
+4. **При logout** - cookies автоматически очищаются
+
+### 🔄 **Примеры использования**
+
+#### **Регистрация с cookies:**
+```bash
+curl -X POST http://localhost:8000/v1/auth/sign-up \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"123"}' \
+  -c cookies.txt
+```
+
+#### **Запрос с cookies:**
+```bash
+curl -X GET http://localhost:8000/v1/client/me \
+  -b cookies.txt
+```
+
+#### **Refresh с cookies:**
+```bash
+curl -X POST http://localhost:8000/v1/auth/refresh_token \
+  -b cookies.txt
+```
+
 ## API Endpoints
 
 ### Аутентификация
 
-#### POST `/v1/client/sign-up`
+#### POST `/v1/auth/sign-up`
 Регистрация нового пользователя
 ```json
 {
@@ -73,7 +127,22 @@ python run.py
 }
 ```
 
-#### POST `/v1/client/sign-in/password`
+**Ответ:**
+```json
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "abc123...",
+  "expires_in": 300
+}
+```
+
+**Cookies:**
+```http
+Set-Cookie: access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Path=/; Max-Age=300
+Set-Cookie: refresh_token=abc123...; HttpOnly; Path=/api/auth/refresh; Max-Age=604800
+```
+
+#### POST `/v1/auth/sign-in/password`
 Вход пользователя
 ```json
 {
@@ -82,19 +151,43 @@ python run.py
 }
 ```
 
-#### POST `/v1/client/refresh_token`
-Обновление токена
+#### POST `/v1/auth/refresh_token`
+Обновление токена (поддерживает cookies)
+
+**Вариант 1 - JSON:**
 ```json
 {
   "refresh_token": "your-refresh-token"
 }
 ```
 
-#### POST `/v1/client/logout`
-Выход пользователя
+**Вариант 2 - Cookies:**
+```http
+Cookie: refresh_token=your-refresh-token
+```
+
+#### POST `/v1/auth/logout`
+Выход пользователя (поддерживает cookies)
+
+**Вариант 1 - JSON:**
 ```json
 {
   "refresh_token": "your-refresh-token"
+}
+```
+
+**Вариант 2 - Cookies:**
+```http
+Cookie: refresh_token=your-refresh-token
+```
+
+#### GET `/v1/auth/cookies`
+Проверка cookies (для отладки)
+```json
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "abc123...",
+  "all_cookies": {...}
 }
 ```
 

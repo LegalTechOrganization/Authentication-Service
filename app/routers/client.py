@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_current_user
@@ -11,6 +11,7 @@ router = APIRouter()
 
 @router.get("/me", response_model=UserInfo)
 async def get_user_info(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -27,13 +28,14 @@ async def get_user_info(
 
 @router.patch("/switch-org", response_model=SwitchOrgResponse)
 async def switch_organization(
-    request: SwitchOrgRequest,
+    request: Request,
+    switch_request: SwitchOrgRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Переключить активную организацию"""
     try:
-        result = await UserService.switch_organization(db, current_user, request.org_id)
+        result = await UserService.switch_organization(db, current_user, switch_request.org_id)
         return SwitchOrgResponse(**result)
     except ValueError as e:
         raise HTTPException(

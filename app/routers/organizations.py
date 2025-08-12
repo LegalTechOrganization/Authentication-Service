@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_current_user
@@ -16,13 +16,14 @@ router = APIRouter()
 
 @router.post("", response_model=CreateOrgResponse)
 async def create_organization(
-    request: CreateOrgRequest,
+    request: Request,
+    create_request: CreateOrgRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Создать новую организацию"""
     try:
-        result = await OrganizationService.create_organization(db, current_user, request)
+        result = await OrganizationService.create_organization(db, current_user, create_request)
         return CreateOrgResponse(**result)
     except Exception as e:
         raise HTTPException(
@@ -33,6 +34,7 @@ async def create_organization(
 
 @router.get("/{org_id}", response_model=OrganizationInfo)
 async def get_organization_info(
+    request: Request,
     org_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -55,6 +57,7 @@ async def get_organization_info(
 
 @router.get("/{org_id}/members", response_model=List[MemberInfo])
 async def get_organization_members(
+    request: Request,
     org_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -72,14 +75,15 @@ async def get_organization_members(
 
 @router.post("/{org_id}/invite", response_model=InviteResponse)
 async def invite_user(
+    request: Request,
     org_id: str,
-    request: InviteRequest,
+    invite_request: InviteRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Пригласить пользователя в организацию"""
     try:
-        result = await OrganizationService.invite_user(db, current_user, org_id, request)
+        result = await OrganizationService.invite_user(db, current_user, org_id, invite_request)
         return InviteResponse(**result)
     except ValueError as e:
         raise HTTPException(
@@ -95,6 +99,7 @@ async def invite_user(
 
 @router.delete("/{org_id}/member/{user_id}", status_code=204)
 async def remove_member(
+    request: Request,
     org_id: str,
     user_id: str,
     current_user: User = Depends(get_current_user),
@@ -118,15 +123,16 @@ async def remove_member(
 
 @router.patch("/{org_id}/member/{user_id}/role", response_model=UpdateRoleResponse)
 async def update_member_role(
+    request: Request,
     org_id: str,
     user_id: str,
-    request: UpdateRoleRequest,
+    role_request: UpdateRoleRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Обновить роль участника"""
     try:
-        result = await OrganizationService.update_member_role(db, current_user, org_id, user_id, request)
+        result = await OrganizationService.update_member_role(db, current_user, org_id, user_id, role_request)
         return UpdateRoleResponse(**result)
     except ValueError as e:
         raise HTTPException(
