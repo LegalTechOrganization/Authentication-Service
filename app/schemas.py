@@ -8,6 +8,7 @@ from uuid import UUID
 class SignUpRequest(BaseModel):
     email: EmailStr
     password: str
+    full_name: str
 
 
 class SignInRequest(BaseModel):
@@ -40,6 +41,7 @@ class ValidateResponse(BaseModel):
 class UserInfo(BaseModel):
     sub: str
     email: str
+    full_name: Optional[str] = None
     orgs: List[dict]
     active_org_id: Optional[str] = None
 

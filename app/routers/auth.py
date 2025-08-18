@@ -53,10 +53,22 @@ async def sign_up(
 ):
     """Регистрация пользователя"""
     try:
+        # Разбираем полное имя на first/last name для Keycloak
+        first_name = ""
+        last_name = ""
+        if getattr(request, "full_name", None):
+            name_parts = [p for p in request.full_name.strip().split(" ") if p]
+            if name_parts:
+                first_name = name_parts[0]
+                if len(name_parts) > 1:
+                    last_name = " ".join(name_parts[1:])
+
         # Пытаемся создать пользователя в Keycloak
         user_id = await keycloak_client.create_user(
             email=request.email,
-            password=request.password
+            password=request.password,
+            first_name=first_name,
+            last_name=last_name
         )
 
         if not user_id:
@@ -75,23 +87,28 @@ async def sign_up(
         if not local_user:
             local_user = User(
                 id=uuid.UUID(user_id),
-                email=request.email
+                email=request.email,
+                full_name=request.full_name
             )
             db.add(local_user)
             db.commit()
+        else:
+            if request.full_name and not local_user.full_name:
+                local_user.full_name = request.full_name
+                db.commit()
 
         # Получить токены через пароль
         token_data = await keycloak_client.authenticate_user(
             email=request.email,
             password=request.password
         )
-
+        
         if not token_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Failed to authenticate user after creation"
             )
-
+        
         # Устанавливаем cookies
         set_auth_cookies(
             response=response,
@@ -99,7 +116,7 @@ async def sign_up(
             refresh_token=token_data["refresh_token"],
             expires_in=token_data.get("expires_in", 300)
         )
-
+        
         return TokenResponse(
             access_token=token_data["access_token"],
             refresh_token=token_data["refresh_token"],

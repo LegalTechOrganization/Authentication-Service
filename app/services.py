@@ -43,6 +43,7 @@ class UserService:
         return {
             "sub": str(user.id),
             "email": user.email,
+            "full_name": user.full_name,
             "orgs": orgs,
             "active_org_id": active_org_id
         }

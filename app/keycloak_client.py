@@ -189,9 +189,14 @@ class KeycloakClient:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/realms/{self.realm}/protocol/openid-connect/logout",
-                data={"refresh_token": refresh_token}
+                data={
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "refresh_token": refresh_token,
+                }
             )
-            return response.status_code == 204
+            # В разных версиях Keycloak возвращается 204 или 200
+            return response.status_code in (200, 204)
 
     async def get_public_keys(self) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
