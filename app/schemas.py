@@ -24,6 +24,11 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -44,6 +49,10 @@ class UserInfo(BaseModel):
     full_name: Optional[str] = None
     orgs: List[dict]
     active_org_id: Optional[str] = None
+
+
+class UpdateUserRequest(BaseModel):
+    full_name: str
 
 
 class SwitchOrgRequest(BaseModel):

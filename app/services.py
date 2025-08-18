@@ -80,6 +80,39 @@ class UserService:
         
         return {"active_org_id": org_id}
 
+    @staticmethod
+    async def update_user_info(db: Session, user: User, full_name: str) -> dict:
+        """Обновить данные пользователя"""
+        # Обновляем полное имя в локальной БД
+        user.full_name = full_name
+        db.commit()
+        
+        # Разбираем полное имя на first/last name для Keycloak
+        first_name = ""
+        last_name = ""
+        if full_name:
+            name_parts = [p for p in full_name.strip().split(" ") if p]
+            if name_parts:
+                first_name = name_parts[0]
+                if len(name_parts) > 1:
+                    last_name = " ".join(name_parts[1:])
+        
+        # Обновляем данные в Keycloak
+        try:
+            await keycloak_client.update_user(
+                str(user.id),
+                {
+                    "firstName": first_name,
+                    "lastName": last_name
+                }
+            )
+        except Exception as e:
+            # Если не удалось обновить в Keycloak, логируем ошибку, но не прерываем
+            print(f"Failed to update user in Keycloak: {e}")
+        
+        # Возвращаем полную информацию о пользователе
+        return await UserService.get_user_info(db, user)
+
 
 class OrganizationService:
     @staticmethod

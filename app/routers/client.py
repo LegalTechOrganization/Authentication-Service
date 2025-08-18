@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_current_user
-from app.schemas import UserInfo, SwitchOrgRequest, SwitchOrgResponse
+from app.schemas import UserInfo, SwitchOrgRequest, SwitchOrgResponse, UpdateUserRequest
 from app.services import UserService
 from app.models import User
 
@@ -18,6 +18,23 @@ async def get_user_info(
     """Получить информацию о текущем пользователе"""
     try:
         user_info = await UserService.get_user_info(db, current_user)
+        return UserInfo(**user_info)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.patch("/update", response_model=UserInfo)
+async def update_user_info(
+    request: UpdateUserRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновить данные текущего пользователя"""
+    try:
+        user_info = await UserService.update_user_info(db, current_user, request.full_name)
         return UserInfo(**user_info)
     except Exception as e:
         raise HTTPException(

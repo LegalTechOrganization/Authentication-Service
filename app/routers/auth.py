@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas import (
     SignUpRequest, SignInRequest, RefreshTokenRequest, LogoutRequest,
-    TokenResponse, ValidateResponse
+    TokenResponse, ValidateResponse, ChangePasswordRequest
 )
 from app.keycloak_client import keycloak_client
 from app.jwt_utils import jwt_utils
 from app.models import User
 from sqlalchemy import func
 import uuid
+from app.auth import get_current_user
 
 router = APIRouter()
 
@@ -273,6 +274,49 @@ async def logout(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e) or "Failed to logout"
+        )
+
+
+@router.post("/change-password", status_code=200)
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Сменить пароль пользователя"""
+    try:
+        # Проверяем старый пароль
+        token_data = await keycloak_client.authenticate_user(
+            email=current_user.email,
+            password=request.old_password
+        )
+        
+        if not token_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid old password"
+            )
+        
+        # Меняем пароль в Keycloak
+        success = await keycloak_client.change_password(
+            str(current_user.id),
+            request.new_password
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to change password"
+            )
+        
+        return {"message": "Password changed successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e) or "Failed to change password"
         )
 
 

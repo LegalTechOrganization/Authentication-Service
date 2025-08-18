@@ -257,5 +257,33 @@ class KeycloakClient:
                 )
             return response.json()
 
+    async def change_password(self, user_id: str, new_password: str) -> bool:
+        """Сменить пароль пользователя"""
+        headers = await self._authorized_headers()
+        payload = {
+            "id": user_id,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": new_password,
+                    "temporary": False
+                }
+            ]
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.put(
+                f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}",
+                json=payload,
+                headers=headers
+            )
+            if response.status_code == 401:
+                headers = await self._authorized_headers()
+                response = await client.put(
+                    f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}",
+                    json=payload,
+                    headers=headers
+                )
+            return response.status_code in (200, 204)
+
 
 keycloak_client = KeycloakClient() 
